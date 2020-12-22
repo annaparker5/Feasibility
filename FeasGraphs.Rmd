@@ -199,4 +199,149 @@ ggplot(aes(x = stage, y = number, color = food), data = ses) +
 ggsave("~/Desktop/GitHub/Feasibility/Figs/Ch2Fig4.png", width = 8, height = 5)
 ```
 
+# Chapter 3: Leaf Consumption by different developmental outcomes
 
+## Load in data
+
+```{r}
+ch3 <- read.csv("~/Desktop/GitHub/Feasibility/Data/MsCcHSFeedDec19final.csv")
+scan <- read.csv("~/Desktop/GitHub/Feasibility/Data/MsCcHSFeedLeafScanFinal.csv", header = T)
+```
+
+## Manipulate data into correct forms
+
+```{r}
+ch3 <- ch3[ch3$fate != "dead" & ch3$fate != "quink" & ch3$fate != "wander*" & ch3$fate != "?", ]
+
+ch3$outcome <- ch3$fate
+
+ch3$outcome <- gsub(" mongo", "", ch3$outcome)
+ch3$outcome <- gsub("em", "we", ch3$outcome)
+
+```
+
+### Get leaf area consumed
+```{r}
+#1
+scan$comb <- paste(scan$Caterpillar.ID, "_", scan$Leaf.ID)
+
+#0
+unique <- unique(scan$comb)
+consumed <- as.data.frame(unique)
+consumed$area <- 0
+
+#2-4
+for (i in 1:length(consumed$unique)){
+    subset <- filter(scan, scan$comb == consumed[i, 1])
+    value <- max(subset$Leaf.Area) - min(subset$Leaf.Area)
+    consumed[i, 2] <- value
+}  
+
+#5
+consumed <- consumed %>%
+  separate(unique, c("catID", "leafID"), "_")
+
+#6
+ID <- unique(consumed$catID)
+consumedsum <- as.data.frame(ID)
+consumedsum$totalarea <- 0
+
+#7
+for (i in 1:length(consumedsum$ID)){
+  subset2 <- filter(consumed, consumed$catID == consumedsum[i, 1])
+  value2 <- sum(subset2$area)
+  consumedsum[i, 2] <- value2
+}
+
+#8
+consumedsum$ID <- as.numeric(consumedsum$ID)
+
+consumedsum <- consumedsum[consumedsum$ID %in% ch3$ID, ]
+
+ch3 <- ch3[ch3$ID %in% consumedsum$ID, ]
+
+consumedsum <- consumedsum[order(consumedsum$ID), ]
+
+ch3$area <- consumedsum$totalarea
+
+```
+
+### Dates to days 
+
+```{r}
+ch3$day.hatch <- loop(start.date = "07/12/2020", date.list = ch3$date.hatch)
+ch3$day.max <- loop(start.date = "07/12/2020", date.list = ch3$date.max)
+
+ch3$ttmax <- ch3$day.max - ch3$day.hatch
+```
+
+### Wasp metrics
+
+```{r}
+ch3$perc.w.ecl <- ch3$num.w.eclos / (ch3$num.w.coc + ch3$num.w.larvae)
+ch3$num.w.total <- (ch3$num.w.coc + ch3$num.w.larvae)
+
+ch3$HS <- factor(ch3$HS, levels = c("yes", "no"))
+```
+
+## Figure 5 - Leaf area consumed by outcome
+
+### From ASN presentation: 
+
+ggplot(aes(x = area, y = mass.max), data = ch3) + 
+  theme_bw() + 
+  geom_point(aes(color = outcome, shape = food)) + 
+  scale_shape_manual(values = c(19, 6)) + 
+  scale_color_manual(values = c("#882255", "#88CCEE", "#117733")) +
+  labs(x = "Leaf surface area consumed (cm2)", y = "Maximum mass achieved (mg)",
+       color = "Developmental Outcome", shape = "Hostplant Consumed")
+
+ggsave("~/Desktop/GitHub/Feasibility/Figs/Ch3Fig5.png", width = 8, height = 5)
+
+
+### Alternate with matching colors: 
+
+```{r}
+ggplot(aes(x = area, y = mass.max), data = ch3) + 
+  theme_bw() + 
+  geom_point(aes(color = food, shape = outcome)) + 
+  scale_shape_manual(values = c(6, 4, 19)) + 
+  scale_color_manual(values = c("#95D840", "#440D54")) +
+  labs(x = "Leaf surface area consumed (cm2)", y = "Maximum mass achieved (mg)",
+       shape = "Developmental Outcome", color = "Hostplant Consumed")
+
+ggsave("~/Desktop/GitHub/Feasibility/Figs/Ch3Fig5.png", width = 8, height = 5)
+```
+
+
+## Figure 6 - Caterpillar developmental data 
+
+
+```{r}
+ggplot(aes(x = ttmax, y = mass.max), data = ch3) + 
+  theme_bw() + 
+  geom_point(aes(color = food, shape = outcome)) + 
+  scale_shape_manual(values = c(6, 4, 19)) + 
+  scale_color_manual(values = c("#95D840", "#440D54")) +
+  labs(x = "Time at maximum mass (days)", y = "Maximum mass achieved (mg)",
+       shape = "Developmental Outcome", color = "Hostplant Consumed")
+
+ggsave("~/Desktop/GitHub/Feasibility/Figs/Ch3Fig6.png", width = 8, height = 5)
+```
+
+## Figure 7 - Wasp survival to eclosion
+
+```{r}
+ggplot(aes(x = num.w.total, y = perc.w.ecl, shape = HS), data = ch3) + 
+  theme_bw() + 
+  ylim(0, 1.05) + 
+  geom_smooth(method = "lm", se = F, aes(linetype = HS), color = "black") + 
+  scale_linetype_manual(values = c("solid", "dotted")) + 
+  geom_point(alpha = 0.8, aes(color = food)) + 
+  scale_shape_manual(values = c(19, 4)) +
+  scale_color_manual(values = c("#95D840", "#440D54")) + 
+  labs(x = "Number emerged", y = "Percentage of wasps eclosed", shape = "Heat Shock Status", 
+       color = "Hostplant Consumed", linetype = "Linear reg - Heat shock status")
+
+ggsave("~/Desktop/GitHub/Feasibility/Figs/Ch3Fig7.png", width = 8, height = 5)
+```
