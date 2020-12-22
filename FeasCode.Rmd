@@ -8,11 +8,195 @@ This document contains all of the code for my feasibility document and presentat
 ## Load in packages
 
 ```{r}
-
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(plyr)
+library(lubridate)
+library(lme4)
+library(Rmisc)
+library(stats)
 ```
 
+## Code for the date to day conversions: 
+
+```{r}
+# Internal process of the loop to convert days to dates
+expt_day <- function(start.date, date){
+  date <- mdy(date)
+  start <- mdy(start.date)
+  diff <- yday(date) - yday(start)
+
+  return(diff)
+}
+
+# Code for the loop itself
+loop <- function(start.date, date.list){
+  days <- rep(NA, length(date.list))
+  for (i in 1:(length(days))){
+    days[i] <- expt_day(start.date = start.date, date = date.list[i])
+  }
+  return(days)
+}
+```
 
 
 # Chapter 2: Success of C. congregata on different diet types
 
-## Load in the data
+### Load in the Ch 2 data and clean it for the first figure
+
+```{r}
+ch2 <- read.csv("~/Desktop/GitHub/Feasibility/Data/MsCcSurvNov8.csv", header = TRUE)
+
+ch2 <- ch2[ch2$survived == "yes", ]
+
+# Remove failed parasitizations
+ch2 <- ch2[ch2$ID != 34, ]
+ch2 <- ch2[ch2$ID != 36, ]
+ch2 <- ch2[ch2$ID != 102, ]
+ch2 <- ch2[ch2$ID != 124, ]
+
+# Get development times for wandering
+ch2$day.hatch <- loop(start.date = "04/21/2020", date.list = ch2$date.hatch)
+ch2$day.w <- loop(start.date = "04/21/2020", date.list = ch2$date.w)
+
+ch2$delta_w <- ch2$day.w - ch2$day.hatch
+ch2$mass_w <- ch2$mass.w
+```
+
+### Load in the Diamond data and clean it
+
+```{r}
+diamond <- read.csv("~/Desktop/GitHub/Feasibility/Data/Diamond AmNat Subset.csv")
+
+diamond <- diamond[diamond$temp == 25, ]
+diamond <- diamond[diamond$pop == "L", ]
+
+diamond$food <- diamond$plant
+diamond$ID <- diamond$cat_id
+
+```
+
+### Load in the diet data and clean it
+
+```{r}
+diet <- read.csv("~/Desktop/GitHub/Feasibility/Data/diet2006.csv")
+
+diet$day.hatch <- loop(start.date = "07/26/2006", date.list = diet$date.hatch)
+diet$day.w <- loop(start.date = "07/26/2006", date.list = diet$date.w)
+
+diet$delta_w <- diet$day.w - diet$day.hatch
+diet$mass_w <- diet$mass.w
+
+```
+
+## Figure 3
+
+### 1. Create experiment column
+
+```{r}
+ch2$expt <- "Parker"
+diamond$expt <- "Diamond"
+diet$expt <- "Diamond"
+```
+
+### 2. Reduce to needed columns and combine
+
+```{r}
+a1 <- ch2 %>%
+  select(expt, ID, food, delta_w, mass_w)
+
+d1 <- diamond %>%
+  select(expt, ID, food, delta_w, mass_w)
+
+d2 <- diet %>%
+  select(expt, ID, food, delta_w, mass_w)
+```
+
+```{r}
+ch2g3 <- (rbind(a1, d1, d2))
+```
+
+### 3. Graph! 
+
+```{r}
+ggplot(aes(x = delta_w, y = mass_w, color = food, shape = expt), data = ch2g3) + 
+  theme_bw() + 
+  geom_point() + 
+  scale_shape_manual(values = c(1, 4),  name = "Experiment") + 
+  labs(x = "Time until wandering (days)", y = "Mass at wandering (mg)") + 
+  scale_color_manual(values=c("#95D840", "#3F87BC", "#440D54"),
+                     name="Food Type",
+                     label=c("Devil's Claw", "Diet", "Tobacco"))
+
+ggsave("~/Desktop/GitHub/Feasibility/Figs/Ch2Fig3.png", width = 8, height = 5)
+```
+
+## Figure 4
+
+### Clean the data for wasp analyses
+
+```{r}
+ch2g4 <- ch2 %>%
+  select(ID, food, bin, num.para, num.w.coc, num.w.larvae, num.w.eclos.tot)
+
+ch2g4 <- ch2g4[complete.cases(ch2g4), ]
+```
+
+### Make new columns for analyses
+
+```{r}
+ch2g4$num.w.emerg.tot <- ch2g4$num.w.coc + ch2g4$num.w.larvae
+```
+
+### Make means for each stage
+
+```{r}
+means <- ch2g4 %>%
+  group_by(food) %>%
+    summarise(emerged = mean(num.w.emerg.tot), cocoons = mean(num.w.coc), 
+              eclosed = mean(num.w.eclos.tot))
+
+meanslong <- gather(means, stage, number, emerged:eclosed)
+
+meanslong$stage <- ordered(meanslong$stage, levels = c("emerged", "cocoons", "eclosed"))
+```
+
+```{r}
+ch2g4$emerged <- ch2g4$num.w.emerg.tot 
+ch2g4$cocoons <- ch2g4$num.w.coc 
+ch2g4$eclosed <- ch2g4$num.w.eclos.tot
+
+ch2g4 <- ch2g4 %>%
+  select(ID, food, emerged, cocoons, eclosed)
+
+ch2g4long <- gather(ch2g4, stage, number, emerged:eclosed)
+ch2g4long$stage <- ordered(ch2g4long$stage, levels = c("emerged", "cocoons", "eclosed"))
+```
+
+```{r}
+ses <- summarySE(ch2g4long, measurevar = "number",
+                  groupvars = c("food", "stage"),
+                  na.rm=TRUE)
+```
+
+### Graph!!
+
+```{r}
+ggplot(aes(x = stage, y = number, color = food), data = ses) + 
+  theme_bw() + 
+  geom_point(aes(size = 3)) + 
+  geom_line(aes(group = food)) + 
+  ylim(0, 120) + 
+  geom_errorbar(aes(ymin = number - se, ymax = number + se),
+                width = .1, size = .5) +
+  scale_color_manual(values=c("#95D840", "#3F87BC", "#440D54"),
+                     name="Food Type",
+                     label=c("Devil's Claw", "Diet", "Tobacco")) + 
+  guides(size = FALSE) + 
+  labs(x = "Life stage", y = "Mean number of individuals")
+
+ggsave("~/Desktop/GitHub/Feasibility/Figs/Ch2Fig4.png", width = 8, height = 5)
+```
+
+
