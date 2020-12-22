@@ -1,0 +1,18 @@
+---
+title: "Code for Feasibility Document"
+output: html_notebook
+---
+
+This document contains all of the code for my feasibility document and presentation. Figures created here are stored in the "Figs" folder within the repo. 
+
+## Load in packages
+
+```{r}
+
+```
+
+
+
+# Chapter 2: Success of C. congregata on different diet types
+
+## Load in the data
