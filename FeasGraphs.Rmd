@@ -335,7 +335,7 @@ ggsave("~/Desktop/GitHub/Feasibility/Figs/Ch3Fig6.png", width = 8, height = 5)
 ggplot(aes(x = num.w.total, y = perc.w.ecl, shape = HS), data = ch3) + 
   theme_bw() + 
   ylim(0, 1.05) + 
-  geom_smooth(method = "lm", se = F, aes(linetype = HS), color = "black") + 
+ # geom_smooth(method = "lm", se = F, aes(linetype = HS), color = "black") + 
   scale_linetype_manual(values = c("solid", "dotted")) + 
   geom_point(alpha = 0.8, aes(color = food)) + 
   scale_shape_manual(values = c(19, 4)) +
