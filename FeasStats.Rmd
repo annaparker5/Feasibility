@@ -1,0 +1,95 @@
+---
+title: "Statistics for my feasibility document"
+output: html_notebook
+---
+
+Here, I will run statistics for my feasibility document. This will give me significances for my different calculations. 
+
+## Load in packages
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(plyr)
+library(lubridate)
+library(lme4)
+library(Rmisc)
+library(stats)
+```
+
+## Code for the date to day conversions: 
+
+```{r}
+# Internal process of the loop to convert days to dates
+expt_day <- function(start.date, date){
+  date <- mdy(date)
+  start <- mdy(start.date)
+  diff <- yday(date) - yday(start)
+
+  return(diff)
+}
+
+# Code for the loop itself
+loop <- function(start.date, date.list){
+  days <- rep(NA, length(date.list))
+  for (i in 1:(length(days))){
+    days[i] <- expt_day(start.date = start.date, date = date.list[i])
+  }
+  return(days)
+}
+```
+
+
+# Chapter 2: Success of C. congregata on different diet types
+
+### Load in the Ch 2 data and clean it for the first figure
+
+```{r}
+ch2 <- read.csv("~/Desktop/GitHub/Feasibility/Data/MsCcSurvDec31Final.csv", header = TRUE)
+
+ch2 <- ch2[ch2$survived == "yes", ]
+
+# Remove failed parasitizations
+ch2 <- ch2[ch2$ID != 34, ]
+ch2 <- ch2[ch2$ID != 36, ]
+ch2 <- ch2[ch2$ID != 102, ]
+ch2 <- ch2[ch2$ID != 124, ]
+
+# Get development times for wandering
+ch2$day.hatch <- loop(start.date = "04/21/2020", date.list = ch2$date.hatch)
+ch2$day.w <- loop(start.date = "04/21/2020", date.list = ch2$date.w)
+ch2$day.coc <- loop(start.date = "04/21/2020", date.list = ch2$date.coc)
+
+ch2$delta_w <- ch2$day.w - ch2$day.hatch
+ch2$mass_w <- ch2$mass.w
+
+ch2$delta_coc <- ch2$day.coc - ch2$day.hatch
+ch2$mass_coc <- ch2$mass.frozen
+```
+
+### Load in the Diamond data and clean it
+
+```{r}
+diamond <- read.csv("~/Desktop/GitHub/Feasibility/Data/Diamond AmNat Subset.csv")
+
+diamond <- diamond[diamond$temp == 25, ]
+diamond <- diamond[diamond$pop == "L", ]
+
+diamond$food <- diamond$plant
+diamond$ID <- diamond$cat_id
+
+```
+
+### Load in the diet data and clean it
+
+```{r}
+diet <- read.csv("~/Desktop/GitHub/Feasibility/Data/diet2006.csv")
+
+diet$day.hatch <- loop(start.date = "07/26/2006", date.list = diet$date.hatch)
+diet$day.w <- loop(start.date = "07/26/2006", date.list = diet$date.w)
+
+diet$delta_w <- diet$day.w - diet$day.hatch
+diet$mass_w <- diet$mass.w
+
+```
