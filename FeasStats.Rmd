@@ -43,7 +43,7 @@ loop <- function(start.date, date.list){
 
 # Chapter 2: Success of C. congregata on different diet types
 
-### Load in the Ch 2 data and clean it for the first figure
+## Load in the Ch 2 data and clean it
 
 ```{r}
 ch2 <- read.csv("~/Desktop/GitHub/Feasibility/Data/MsCcSurvDec31Final.csv", header = TRUE)
@@ -66,30 +66,154 @@ ch2$mass_w <- ch2$mass.w
 
 ch2$delta_coc <- ch2$day.coc - ch2$day.hatch
 ch2$mass_coc <- ch2$mass.frozen
+
+ch2para <- ch2[ch2$para == "yes", ]
+ch2unpara <- ch2[ch2$para == "no", ]
 ```
 
-### Load in the Diamond data and clean it
+## Differences in mass and development time between treatment groups
+
+### Parasitized mass at emergence
 
 ```{r}
-diamond <- read.csv("~/Desktop/GitHub/Feasibility/Data/Diamond AmNat Subset.csv")
+mod2paramass <- lmer(mass_coc ~ food + (1|bin), data = ch2para)
 
-diamond <- diamond[diamond$temp == 25, ]
-diamond <- diamond[diamond$pop == "L", ]
-
-diamond$food <- diamond$plant
-diamond$ID <- diamond$cat_id
-
+summary(mod2paramass)
+anova(mod2paramass)
 ```
+Diet is lowest, then DC, then TB
 
-### Load in the diet data and clean it
+Numerator df = 2
+Denominator df = 55
+
+F-value from table to be significant at alpha = 0.01 - ~5 
+
+Groups are significantly different 
+
+### Unparasitized mass at wandering
 
 ```{r}
-diet <- read.csv("~/Desktop/GitHub/Feasibility/Data/diet2006.csv")
+mod2unparamass <- lmer(mass_w ~ food + (1|bin), data = ch2unpara)
 
-diet$day.hatch <- loop(start.date = "07/26/2006", date.list = diet$date.hatch)
-diet$day.w <- loop(start.date = "07/26/2006", date.list = diet$date.w)
-
-diet$delta_w <- diet$day.w - diet$day.hatch
-diet$mass_w <- diet$mass.w
-
+summary(mod2unparamass)
+anova(mod2unparamass)
 ```
+
+DC is lowest, then diet, then TB
+
+Not significantly different!
+
+### Parasitized dev time at emergence
+
+```{r}
+mod2paradt <- lmer(day.coc ~ food + (1|bin), data = ch2para)
+
+summary(mod2paradt)
+anova(mod2paradt)
+```
+
+Overlapping
+
+Fit is singular, but not significant. 
+
+### Unparasitized dev time at wandering
+
+```{r}
+mod2unparadt <- lmer(day.w ~ food + (1|bin), data = ch2unpara)
+
+summary(mod2unparadt)
+anova(mod2unparadt)
+```
+
+TB, then diet, then DC
+
+Not significant! 
+
+## Survival of wasps between developmental stages
+
+```{r}
+ch2para$num.emerge.tot <- ch2para$num.w.coc + ch2para$num.w.larvae
+
+ch2para$perc.w.surv.tot <- ch2para$num.w.eclos.tot / ch2para$num.emerge.tot
+```
+
+```{r}
+mod2waspsurv <- glmer(perc.w.surv.tot ~ food + (1|bin), data = ch2para, family = "binomial", 
+                      weights = num.emerge.tot )
+
+summary(mod2waspsurv)
+anova(mod2waspsurv)
+```
+
+TB significantly different than DC, diet is not  
+
+ANOVA is very close to significance - need to bootstrap or something to figure it out 
+
+### Percentages of wasps that had emergence at 4th instar in each diet type 
+
+```{r}
+ch2paracount <- ch2para %>%
+  select(ID, food, mass.5th, mass_coc, num.w.coc, num.w.larvae, num.emerge.tot, num.w.eclos.tot, perc.w.surv.tot)
+
+ch2paracount4 <- ch2paracount %>% 
+  filter_all(any_vars(is.na(ch2paracount$mass.5th)))
+
+ch2paracount5 <- ch2paracount %>%
+  filter_all(any_vars(complete.cases(ch2paracount)))
+```
+
+```{r}
+count(ch2paracount4[ch2paracount4$food == "diet", ])
+# 9 
+count(ch2paracount[ch2paracount$food == "diet", ])
+#20
+
+# 45%
+
+count(ch2paracount4[ch2paracount4$food == "TB", ])
+# 1
+count(ch2paracount[ch2paracount$food == "TB", ])
+#17
+
+# 5.8%
+
+count(ch2paracount4[ch2paracount4$food == "DC", ])
+# 6 
+count(ch2paracount[ch2paracount$food == "DC", ])
+#19
+
+# 31.5%
+```
+
+```{r}
+t.test(ch2paracount4$num.emerge.tot, ch2paracount5$num.emerge.tot)
+```
+
+```{r}
+t.test(ch2paracount4$mass_coc, ch2paracount5$mass_coc)
+```
+
+### Run model with diet type and para status predicting mass 
+
+```{r}
+ch2para$mass.final <- ch2para$mass.frozen
+
+ch2unpara$mass.final <- ch2unpara$mass.w
+
+ch2pmass <- ch2para %>% 
+  select(ID, food, bin, para, mass.final)
+
+ch2npmass <- ch2unpara %>%
+  select(ID, food, bin, para, mass.final)
+
+ch2mass <- rbind(ch2pmass, ch2npmass)
+```
+
+```{r}
+mod2mass <- lmer(mass.final ~ food*para + (1|bin), data = ch2mass)
+
+summary(mod2mass)
+anova(mod2mass)
+```
+
+Yes, yes, yes - all significant 
