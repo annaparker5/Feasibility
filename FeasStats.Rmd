@@ -232,7 +232,7 @@ Yes, yes, yes - all significant
 
 
 ```{r}
-ch3 <- read.csv("~/Desktop/MsCcHSFeedDec27Final.csv")
+ch3 <- read.csv("~/Desktop/MsCcHSFeedJan1MOD.csv", header = T)
 scan <- read.csv("~/Desktop/MsCcHSFeedLeafScanFinal.csv", header = T)
 ```
 
@@ -240,6 +240,8 @@ scan <- read.csv("~/Desktop/MsCcHSFeedLeafScanFinal.csv", header = T)
 
 ```{r}
 ch3 <- ch3[ch3$fate != "dead" & ch3$fate != "quink" & ch3$fate != "wander*" & ch3$fate != "?", ]
+
+ch3 <- ch3[complete.cases(ch3[, 1]), ]
 
 ch3$outcome <- ch3$fate
 
@@ -319,5 +321,58 @@ mod3area <- lmer(area ~ food*outcome + (1|bin), data = ch3)
 
 summary(mod3area)
 anova(mod3area)
+```
+
+Only outcome is significant
+
+## Growth and development metrics
+
+### Caterpillar mass
+
+```{r}
+mod3mass <- lmer(mass.max ~ food*outcome + (1|bin), data = ch3)
+
+summary(mod3mass)
+anova(mod3mass)
+```
+
+Only outcome is significant
+
+### Development time
+
+```{r}
+mod3dt <- lmer(ttmax ~ food*outcome + (1|bin), data = ch3)
+
+summary(mod3dt)
+anova(mod3dt)
+```
+
+All 3 are significant
+
+## Wasp metrics
+
+### Survival to eclosion
+
+```{r}
+ch3para <- ch3[ch3$para == "yes", ]
+
+mod3waspsurv <- glmer(perc.w.ecl ~ food*HS + (1|bin), data = ch3para, family = "binomial", weights = num.w.total )
+
+summary(mod3waspsurv)
+anova(mod3waspsurv)
+```
+
+Hostplant not significant, but heat shock and their interaction significant. 
+
+
+```{r}
+summarySE(data = ch3para, measurevar = "num.w.eclos", groupvars = c("food", "HS"), na.rm = T)
+```
+
+```{r}
+mod3waspemerge <- lmer(num.w.total ~ food*HS + (1|bin), data = ch3para)
+
+summary(mod3waspemerge)
+anova(mod3waspemerge)
 ```
 
