@@ -224,7 +224,7 @@ ggsave("~/Desktop/GitHub/Feasibility/Figs/Ch2Fig4.png", width = 8, height = 5)
 ## Load in data
 
 ```{r}
-ch3 <- read.csv("~/Desktop/GitHub/Feasibility/Data/MsCcHSFeedDec19final.csv")
+ch3 <- read.csv("~/Desktop/GitHub/Feasibility/Data/MsCcHSFeedJan1MOD.csv", header = T)
 scan <- read.csv("~/Desktop/GitHub/Feasibility/Data/MsCcHSFeedLeafScanFinal.csv", header = T)
 ```
 
