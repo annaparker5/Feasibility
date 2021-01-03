@@ -376,3 +376,18 @@ summary(mod3waspemerge)
 anova(mod3waspemerge)
 ```
 
+### Calculate numbers of WE and WOWE from PHS group
+
+```{r}
+ch3count <- ch3[ch3$treatment == "P HS", ]
+
+count(ch3count[ch3count$outcome == "wander", ])
+#3
+
+count(ch3count[ch3count$outcome == "we", ])
+#6
+
+count(ch3count[ch3count$outcome == "wowe", ])
+#34
+```
+
