@@ -219,6 +219,32 @@ ggplot(aes(x = stage, y = number, color = food), data = ses) +
 ggsave("~/Desktop/GitHub/Feasibility/Figs/Ch2Fig4.png", width = 8, height = 5)
 ```
 
+### Replacement Fig 4 for presentation
+
+```{r}
+ch2g4$condsurv <- ch2g4$eclosed / ch2g4$emerged
+
+ch2g4 <- ch2g4[ch2g4$food != "diet", ]
+
+ch2g4means <- summarySE(data = ch2g4, measurevar = "condsurv", groupvars = "food")
+
+```
+
+```{r}
+ggplot(aes(x = food, y = condsurv), data = ch2g4means) + 
+  theme_bw() + 
+  ylim(0,1) + 
+  geom_col(aes(fill = food)) + 
+  geom_errorbar(aes(ymin = condsurv - se, ymax = condsurv + se),
+                width = .1, size = .5) + 
+  geom_jitter(aes(x = food, y = condsurv), data = ch2g4, width = 0.1, alpha = 0.7) + 
+  guides(fill = FALSE) + 
+  labs(x = "Caterpillar Host Plant", y = "Survival Probability (eclosed | emerged)")
+
+ggsave("~/Desktop/GitHub/Feasibility/Figs/Ch2Fig4replace.png", width = 8, height = 5)
+```
+
+
 # Chapter 3: Leaf Consumption by different developmental outcomes
 
 ## Load in data
