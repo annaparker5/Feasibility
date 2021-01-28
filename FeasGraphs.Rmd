@@ -239,7 +239,7 @@ ggplot(aes(x = food, y = condsurv), data = ch2g4means) +
                 width = .1, size = .5) + 
   geom_jitter(aes(x = food, y = condsurv), data = ch2g4, width = 0.1, alpha = 0.7) + 
   guides(fill = FALSE) + 
-  labs(x = "Caterpillar Host Plant", y = "Survival Probability (eclosed | emerged)")
+  labs(x = "Caterpillar Host Plant", y = "Survival Proportion (eclosed | emerged)")
 
 ggsave("~/Desktop/GitHub/Feasibility/Figs/Ch2Fig4replace.png", width = 8, height = 5)
 ```
