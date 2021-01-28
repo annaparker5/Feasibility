@@ -232,8 +232,8 @@ Yes, yes, yes - all significant
 
 
 ```{r}
-ch3 <- read.csv("~/Desktop/MsCcHSFeedJan1MOD.csv", header = T)
-scan <- read.csv("~/Desktop/MsCcHSFeedLeafScanFinal.csv", header = T)
+ch3 <- read.csv("~/Desktop/GitHub/Feasibility/Data/MsCcHSFeedJan1MOD.csv", header = T)
+scan <- read.csv("~/Desktop/GitHub/Feasibility/Data/MsCcHSFeedLeafScanFinal.csv", header = T)
 ```
 
 ## Manipulate ch3 into correct forms
